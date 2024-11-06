@@ -34,7 +34,7 @@ const (
 
 
 const (
-    VERSION = "0.1.1"
+    VERSION = "0.1.2"
     DEFAULT_PORT = 8080
     DEFAULT_ADDRESS = "0.0.0.0"
 )
@@ -147,7 +147,7 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // サーバーを開始する関数
-func startServer(ctx context.Context, address string, port int) *http.Server {
+func startServer(address string, port int) *http.Server {
     mux := http.NewServeMux()
     mux.HandleFunc("/", webGUIServer)
     mux.HandleFunc("/api/press_key", pressKey)
@@ -216,7 +216,7 @@ func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.S
                     logWarn(fmt.Sprintf("サーバーをポート %d で再起動します...", newPort))
                     (*server).Shutdown(context.Background()) // 現在のサーバーをシャットダウン
                     *port = newPort
-                    *server = startServer(ctx, *address, *port) // 新しいポートでサーバーを再起動
+                    *server = startServer(*address, *port) // 新しいポートでサーバーを再起動
                     logInfo(fmt.Sprintf("新しいポート %d でサーバーが起動しました", newPort))
                 } else {
                     fmt.Println("無効なポート番号です。正しい整数を入力してください。")
@@ -261,7 +261,7 @@ func main() {
     sigs := make(chan os.Signal, 1)
     signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-    server := startServer(ctx, *address, *port)
+    server := startServer(*address, *port)
 
     go commandLoop(ctx, cancel, &server, address, port)
 
