@@ -270,9 +270,11 @@ func greeting(address string, port int) {
 	fmt.Println("-----------------------------------------------------")
 	fmt.Println(" Simple Remote Control v" + VERSION)
 	fmt.Println("       シンプルなシングルバイナリ型PowerPointリモコン")
-	fmt.Println("-----------------------------------------------------")
-	fmt.Printf("- Listen address: http://%s:%d/\n", address, port)
-	fmt.Println("-----------------------------------------------------")
+	fmt.Println("--------------------------------------------------------")
+	fmt.Printf("- Listen for: %s:%d\n", address, port)
+	fmt.Printf("(ヒント: このホストからWebGUIに接続する場合、\n")
+    fmt.Printf("  一般的な環境では http://localhost:%d が使用できます\n", port)
+	fmt.Println("--------------------------------------------------------")
 }
 
 func main() {
