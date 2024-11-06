@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Address List & Presentation Controller</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrapper">
+    <!-- プレゼンテーション操作カード -->
+    <div class="card control-card">
+      <h2>プレゼンテーション操作</h2>
+      <div class="control-buttons">
+        <button id="prevSlide"><i class="fas fa-arrow-left"></i></button>
+        <button id="nextSlide"><i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- アドレス一覧カード -->
+    <div class="card address-card">
+      <div class="input-area">
+        <input type="text" id="addressInput" placeholder="アドレスを入力してください">
+        <button id="addButton"><i class="fas fa-plus"></i> 追加</button>
+      </div>
+      <table id="addressTable" class="address-table">
+        <thead>
+          <tr>
+            <th style="width: 70%;">アドレス</th>
+            <th style="width: 15%;">ステータス</th>
+            <th style="width: 15%;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="addressTableBody">
+          <!-- 行が動的に追加される -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

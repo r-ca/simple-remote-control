@@ -1,0 +1,136 @@
+/* 全体リセット */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+/* ラッパー */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  padding: 15px;
+}
+
+/* カードスタイル */
+.card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.control-card {
+  text-align: center;
+}
+
+.address-card .input-area {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+/* 入力エリア */
+input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+button {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button i {
+  margin-right: 4px;
+}
+
+button:hover {
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+/* プレゼンテーションの操作ボタン */
+.control-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.control-buttons button {
+  background-color: #007bff;
+  color: white;
+  font-size: 18px;
+  padding: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.control-buttons button:hover {
+  transform: scale(1.1);
+  background-color: #0056b3;
+}
+
+/* アドレステーブル */
+.address-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.address-table th, .address-table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.address-table th {
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+.address-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* ステータスアイコン */
+.status-icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: green;
+  border-radius: 50%;
+}
+
+/* 削除ボタン */
+.delete-button {
+  color: red;
+  cursor: pointer;
+}
