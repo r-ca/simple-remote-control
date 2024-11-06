@@ -15,11 +15,21 @@ import (
     "os/signal"
     "path"
     "path/filepath"
+    "strconv"
     "strings"
     "syscall"
     "time"
 
     "github.com/micmonay/keybd_event"
+)
+
+// ANSIカラーコード
+const (
+    colorReset  = "\033[0m"
+    colorRed    = "\033[31m"
+    colorGreen  = "\033[32m"
+    colorYellow = "\033[33m"
+    colorBlue   = "\033[34m"
 )
 
 // 静的ファイルを埋め込み
@@ -30,39 +40,17 @@ type KeyRequest struct {
     Key string `json:"key"`
 }
 
-// Greeting: 起動時の挨拶とIPアドレスの表示
-func Greeting(address string, port int) {
-    log.Printf("サーバーを起動中です... WebGUIは http://%s:%d でアクセスできます", address, port)
-    listLocalIPs()
+// カラーログ関数
+func logInfo(message string) {
+    log.Println(colorGreen + message + colorReset)
 }
 
-// 自ホストのIPアドレスを列挙
-func listLocalIPs() {
-    ifaces, err := net.Interfaces()
-    if err != nil {
-        log.Printf("IPアドレスの取得に失敗しました: %v\n", err)
-        return
-    }
+func logWarn(message string) {
+    log.Println(colorYellow + message + colorReset)
+}
 
-    log.Println("自ホストのIPアドレス一覧:")
-    for _, iface := range ifaces {
-        addrs, err := iface.Addrs()
-        if err != nil {
-            log.Printf("インタフェース %v のアドレス取得に失敗しました: %v\n", iface.Name, err)
-            continue
-        }
-        for _, addr := range addrs {
-            ip, _, err := net.ParseCIDR(addr.String())
-            if err != nil {
-                log.Printf("アドレスの解析に失敗しました: %v\n", err)
-                continue
-            }
-            if ip.IsLoopback() {
-                continue
-            }
-            fmt.Printf("- %s: %s\n", iface.Name, ip.String())
-        }
-    }
+func logError(message string) {
+    log.Println(colorRed + message + colorReset)
 }
 
 // WebGUI（静的ファイルサーバー）
@@ -154,78 +142,124 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
     w.Write([]byte("pong"))
 }
 
+// サーバーを開始する関数
+func startServer(ctx context.Context, address string, port int) *http.Server {
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", webGUIServer)
+    mux.HandleFunc("/api/press_key", pressKey)
+    mux.HandleFunc("/api/ping", pingHandler)
+
+    server := &http.Server{
+        Addr:    fmt.Sprintf("%s:%d", address, port),
+        Handler: mux,
+    }
+
+    go func() {
+        logInfo(fmt.Sprintf("サーバーを %s で起動しました", server.Addr))
+        if err := server.ListenAndServe(); err != http.ErrServerClosed {
+            logError(fmt.Sprintf("サーバーの起動に失敗しました: %v", err))
+        }
+    }()
+
+    return server
+}
+
+// コマンドからインタフェースのIPアドレスを表示
+func showLocalIPs() {
+    ifaces, err := net.Interfaces()
+    if err != nil {
+        logError(fmt.Sprintf("IPアドレスの取得に失敗しました: %v", err))
+        return
+    }
+
+    logInfo("自ホストのIPアドレス一覧:")
+    for _, iface := range ifaces {
+        addrs, err := iface.Addrs()
+        if err != nil {
+            logError(fmt.Sprintf("インタフェース %v のアドレス取得に失敗しました: %v", iface.Name, err))
+            continue
+        }
+        for _, addr := range addrs {
+            ip, _, err := net.ParseCIDR(addr.String())
+            if err != nil {
+                logError(fmt.Sprintf("アドレスの解析に失敗しました: %v", err))
+                continue
+            }
+            if ip.IsLoopback() {
+                continue
+            }
+            fmt.Printf("- %s: %s\n", iface.Name, ip.String())
+        }
+    }
+}
+
 // ターミナルからのコマンド入力を処理する関数
-func commandLoop(cancel context.CancelFunc) {
+func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.Server, address *string, port *int) {
     scanner := bufio.NewScanner(os.Stdin)
-    fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'exit'で終了）：")
+    fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'switch <port>'でポート切り替え、'exit'で終了）：")
+
     for scanner.Scan() {
         input := strings.TrimSpace(scanner.Text())
-        switch input {
+        parts := strings.Split(input, " ")
+
+        switch parts[0] {
         case "show":
-            listLocalIPs()
+            showLocalIPs()
+        case "switch":
+            if len(parts) == 2 {
+                newPort, err := strconv.Atoi(parts[1])
+                if err == nil {
+                    logWarn(fmt.Sprintf("サーバーをポート %d で再起動します...", newPort))
+                    (*server).Shutdown(context.Background()) // 現在のサーバーをシャットダウン
+                    *port = newPort
+                    *server = startServer(ctx, *address, *port) // 新しいポートでサーバーを再起動
+                    logInfo(fmt.Sprintf("新しいポート %d でサーバーが起動しました", newPort))
+                } else {
+                    fmt.Println("無効なポート番号です。正しい整数を入力してください。")
+                }
+            } else {
+                fmt.Println("使用法: switch <port>")
+            }
         case "exit":
             fmt.Println("終了します。")
             cancel() // サーバーのシャットダウンをトリガー
             return
         default:
-            fmt.Println("不明なコマンドです。'show' または 'exit' を入力してください。")
+            fmt.Println("不明なコマンドです。'show'、'switch <port>'、または 'exit' を入力してください。")
         }
-        fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'exit'で終了）：")
+        fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'switch <port>'でポート切り替え、'exit'で終了）：")
     }
+
     if err := scanner.Err(); err != nil {
-        log.Printf("コマンド入力中にエラーが発生しました: %v", err)
+        logError(fmt.Sprintf("コマンド入力中にエラーが発生しました: %v", err))
     }
 }
 
 func main() {
-    // コマンドライン引数でアドレスとポートを指定
     address := flag.String("addr", "localhost", "サーバーのアドレス")
     port := flag.Int("port", 5555, "サーバーのポート番号")
     flag.Parse()
 
-    // シグナル処理のためのコンテキスト
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
 
-    // シグナルのリスニングをセットアップ
     sigs := make(chan os.Signal, 1)
     signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-    // マルチプレクサの設定
-    mux := http.NewServeMux()
-    mux.HandleFunc("/", webGUIServer)        // WebGUI（静的ファイルサーバー）
-    mux.HandleFunc("/api/press_key", pressKey) // キー入力API
-    mux.HandleFunc("/api/ping", pingHandler)    // Pingエンドポイント
+    server := startServer(ctx, *address, *port)
 
-    // サーバー設定
-    server := &http.Server{
-        Addr:    fmt.Sprintf("%s:%d", *address, *port),
-        Handler: mux,
-    }
+    go commandLoop(ctx, cancel, &server, address, port)
 
-    // サーバーを別ゴルーチンで起動
-    go func() {
-        log.Printf("サーバーを %s で起動しました", server.Addr)
-        if err := server.ListenAndServe(); err != http.ErrServerClosed {
-            log.Fatalf("サーバーの起動に失敗しました: %v", err)
-        }
-    }()
-
-    // コマンド入力の待機を別ゴルーチンで実行
-    go commandLoop(cancel)
-
-    // シグナルまたはキャンセルされるまで待機
     select {
     case <-sigs:
         fmt.Println("\nシグナルを受信しました。終了します。")
     case <-ctx.Done():
     }
 
-    // サーバーのシャットダウン
     shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer shutdownCancel()
     if err := server.Shutdown(shutdownCtx); err != nil {
-        log.Fatalf("サーバーのシャットダウンに失敗しました: %v", err)
+        logError(fmt.Sprintf("サーバーのシャットダウンに失敗しました: %v", err))
     }
-    log.Println("サーバーが正常に停止しました。")
+    logInfo("サーバーが正常に停止しました。")
 }
