@@ -83,14 +83,6 @@ function createAddressRow(address) {
 
 // プレゼンテーションのスライドを変更する関数
 function changeSlide(direction) {
-    // if (direction === 'prev') {
-    //     console.log("前のスライドに移動します");
-    //     // 前のスライドに移動する処理
-    // } else if (direction === 'next') {
-    //     console.log("次のスライドに移動します");
-    //     // 次のスライドに移動する処理
-    // }
-    
     sendKeyPress(direction === 'prev' ? 'left' : 'right');
 }
 
@@ -132,18 +124,6 @@ function updateStatus(address, status) {
 
 // 定期的にステータスをチェックする
 setInterval(checkStatus, 5000);
-
-
-// function sendKeyPress(key) {
-//     fetch(`${agentAddress}/press_key`, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ key })
-//     })
-//         .then(response => response.ok ? response.text() : Promise.reject(response.statusText))
-//         .then(console.log)
-//         .catch(console.error);
-// }
 
 // Supported keys: "left", "right"
 function sendKeyPress(key) {
