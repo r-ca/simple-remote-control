@@ -275,7 +275,7 @@ func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.S
 }
 
 func greeting(address string, port int) {
-	fmt.Println("-----------------------------------------------------")
+	fmt.Println("--------------------------------------------------------")
 	fmt.Println(" Simple Remote Control v" + VERSION)
 	fmt.Println("       シンプルなシングルバイナリ型PowerPointリモコン")
 	fmt.Println("--------------------------------------------------------")
