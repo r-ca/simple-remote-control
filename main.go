@@ -33,7 +33,7 @@ const (
 )
 
 const (
-	VERSION         = "0.2.0"
+	VERSION         = "0.2.1"
 	DEFAULT_PORT    = 8080
 	DEFAULT_ADDRESS = "0.0.0.0"
 )
