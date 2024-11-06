@@ -73,7 +73,7 @@ function createAddressRow(address) {
         // アドレスリストから削除
         addressList = addressList.filter(item => item !== address);
         // テーブルから削除
-        row.remove
+        row.remove();
     }
     actionCell.appendChild(deleteButton);
     row.appendChild(actionCell);
