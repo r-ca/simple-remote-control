@@ -277,4 +277,7 @@ func main() {
         logError(fmt.Sprintf("サーバーのシャットダウンに失敗しました: %v", err))
     }
     logInfo("サーバーが正常に停止しました。")
+
+    // Bye! log
+    logInfo("Bye!")
 }
