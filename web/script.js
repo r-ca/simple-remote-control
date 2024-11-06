@@ -69,7 +69,12 @@ function createAddressRow(address) {
     const deleteButton = document.createElement("span");
     deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
     deleteButton.classList.add("delete-button");
-    deleteButton.onclick = () => row.remove();
+    deleteButton.onclick = () => {
+        // アドレスリストから削除
+        addressList = addressList.filter(item => item !== address);
+        // テーブルから削除
+        row.remove
+    }
     actionCell.appendChild(deleteButton);
     row.appendChild(actionCell);
 
@@ -78,13 +83,79 @@ function createAddressRow(address) {
 
 // プレゼンテーションのスライドを変更する関数
 function changeSlide(direction) {
-    if (direction === 'prev') {
-        console.log("前のスライドに移動します");
-        // 前のスライドに移動する処理
-    } else if (direction === 'next') {
-        console.log("次のスライドに移動します");
-        // 次のスライドに移動する処理
+    // if (direction === 'prev') {
+    //     console.log("前のスライドに移動します");
+    //     // 前のスライドに移動する処理
+    // } else if (direction === 'next') {
+    //     console.log("次のスライドに移動します");
+    //     // 次のスライドに移動する処理
+    // }
+    
+    sendKeyPress(direction === 'prev' ? 'left' : 'right');
+}
+
+// TODO: 内部でグローバル変数を参照するのをやめたい
+function checkStatus() {
+    addressList.forEach((address, index) => {
+        fetch(address)
+            .then(response => {
+                if (response.ok) {
+                    console.log(`[${index}] ${address} is OK`);
+                    updateStatus(address, true);
+                } else {
+                    console.error(`[${index}] ${address} is NOT OK`);
+                    updateStatus(address, false);
+                }
+            })
+            .catch(error => {
+                console.error(`[${index}] ${address} is NOT OK`);
+                updateStatus(address, false);
+            });
+    });
+}
+
+function updateStatus(address, status) {
+    const tableBody = document.getElementById("addressTableBody");
+    const rows = tableBody.getElementsByTagName("tr");
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const addressCell = row.getElementsByTagName("td")[0];
+        if (addressCell.textContent === address) {
+            const statusCell = row.getElementsByTagName("td")[1];
+            const statusIcon = statusCell.getElementsByClassName("status-icon")[0];
+            statusIcon.classList.remove("success", "error");
+            statusIcon.classList.add(status === true ? "success" : "error");
+            break;
+        }
     }
 }
 
+// 定期的にステータスをチェックする
+setInterval(checkStatus, 5000);
+
+
+// function sendKeyPress(key) {
+//     fetch(`${agentAddress}/press_key`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ key })
+//     })
+//         .then(response => response.ok ? response.text() : Promise.reject(response.statusText))
+//         .then(console.log)
+//         .catch(console.error);
+// }
+
+// Supported keys: "left", "right"
+function sendKeyPress(key) {
+    addressList.forEach((address, index) => {
+        fetch(`${address}/press_key`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key })
+        })
+            .then(response => response.ok ? response.text() : Promise.reject(response.statusText))
+            .then(console.log)
+            .catch(console.error);
+    });
+}
 
