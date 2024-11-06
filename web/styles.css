@@ -64,10 +64,6 @@ button {
   transition: background-color 0.3s;
 }
 
-button i {
-  margin-right: 4px;
-}
-
 button:hover {
   background-color: #007bff;
   color: #ffffff;
