@@ -119,12 +119,6 @@ func sendKeyEvent(key string) error {
     }
 
     switch key {
-    case "a":
-        kb.SetKeys(keybd_event.VK_A)
-    case "b":
-        kb.SetKeys(keybd_event.VK_B)
-    case "space":
-        kb.SetKeys(keybd_event.VK_SPACE)
     case "left":
         kb.SetKeys(keybd_event.VK_LEFT)
     case "right":
