@@ -205,7 +205,9 @@ func showLocalIPs() {
 // ターミナルからのコマンド入力を処理する関数
 func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.Server, address *string, port *int) {
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'switch <port>'でポート切り替え、'exit'で終了、'log ping <on|off>'でPingログモードの制御）：")
+	// fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'switch <port>'でポート切り替え、'exit'で終了、'log ping <on|off>'でPingログモードの制御）：")
+
+	fmt.Println("コマンドを入力... (help: ヘルプ)")
 
 	for scanner.Scan() {
 		input := strings.TrimSpace(scanner.Text())
@@ -255,10 +257,16 @@ func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.S
 			} else {
 				fmt.Println("使用法: log <ping|key> <on|off>")
 			}
+
+		case "help":
+			fmt.Println("・ 'show': ホストに搭載されているI/Fのアドレスを列挙")
+			fmt.Println("・ 'switch <port>': 使用ポートの切り替え")
+			fmt.Println("・ 'log ping <on|off>': Pingログの表示を切り替え")
+			fmt.Println("・ 'exit': システムを終了")
 		default:
-			fmt.Println("不明なコマンドです。'show'、'switch <port>'、または 'exit' を入力してください。")
+			fmt.Println("不明なコマンドです。(help: ヘルプ)")
 		}
-		fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'switch <port>'でポート切り替え、'exit'で終了）：")
+		fmt.Println("コマンドを入力... (help: ヘルプ)")
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -273,7 +281,7 @@ func greeting(address string, port int) {
 	fmt.Println("--------------------------------------------------------")
 	fmt.Printf("- Listen for: %s:%d\n", address, port)
 	fmt.Printf("(ヒント: このホストからWebGUIに接続する場合、\n")
-    fmt.Printf("  一般的な環境では http://localhost:%d が使用できます\n", port)
+	fmt.Printf("  一般的な環境では http://localhost:%d が使用できます\n", port)
 	fmt.Println("--------------------------------------------------------")
 }
 
