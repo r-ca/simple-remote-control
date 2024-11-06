@@ -26,7 +26,7 @@ function addAddress() {
     const row = createAddressRow(address);
     tableBody.appendChild(row);
 
-    // アドレスリストに追
+    // アドレスリストに追加
     addressList.push(address);
 
     addressInput.value = "";
