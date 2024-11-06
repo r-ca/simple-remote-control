@@ -32,6 +32,13 @@ const (
     colorBlue   = "\033[34m"
 )
 
+
+const (
+    VERSION = "0.1.0"
+    DEFAULT_PORT = 8080
+    DEFAULT_ADDRESS = "0.0.0.0"
+)
+
 // 静的ファイルを埋め込み
 //go:embed web/*
 var staticFiles embed.FS
@@ -239,8 +246,8 @@ func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.S
 }
 
 func main() {
-    address := flag.String("addr", "localhost", "サーバーのアドレス")
-    port := flag.Int("port", 5555, "サーバーのポート番号")
+    address := flag.String("addr", DEFAULT_ADDRESS, "サーバーのアドレス")
+    port := flag.Int("port", DEFAULT_PORT, "サーバーのポート番号")
     flag.Parse()
 
     ctx, cancel := context.WithCancel(context.Background())
