@@ -206,7 +206,7 @@ func showLocalIPs() {
 }
 
 // ターミナルからのコマンド入力を処理する関数
-func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.Server, address *string, port *int) {
+func commandLoop(cancel context.CancelFunc, server **http.Server, address *string, port *int) {
 	scanner := bufio.NewScanner(os.Stdin)
 	// fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'switch <port>'でポート切り替え、'exit'で終了、'log ping <on|off>'でPingログモードの制御）：")
 
@@ -303,7 +303,7 @@ func main() {
 
 	server := startServer(*address, *port)
 
-	go commandLoop(ctx, cancel, &server, address, port)
+	go commandLoop(cancel, &server, address, port)
 
 	select {
 	case <-sigs:
