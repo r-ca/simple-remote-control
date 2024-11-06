@@ -1,41 +1,38 @@
 package main
 
 import (
+    "bufio"
+    "context"
     "embed"
     "encoding/json"
+    "flag"
     "fmt"
     "log"
+    "mime"
     "net"
     "net/http"
-    "sync"
+    "os"
+    "os/signal"
+    "path"
+    "path/filepath"
+    "strings"
+    "syscall"
     "time"
 
     "github.com/micmonay/keybd_event"
 )
 
 // 静的ファイルを埋め込み
-//go:embed web/index.html web/script.js web/styles.css
+//go:embed web/*
 var staticFiles embed.FS
 
 type KeyRequest struct {
     Key string `json:"key"`
 }
 
-// findAvailablePort: 指定されたポートが使用中の場合、別の空いているポートを返す
-func findAvailablePort(preferredPort int) int {
-    for port := preferredPort; port < 65535; port++ {
-        ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-        if err == nil {
-            ln.Close()
-            return port
-        }
-    }
-    return 0 // 全ポート使用中の場合（ただし現実的には起こりにくい）
-}
-
-// Greeting: 起動時の挨拶、WebGUIの案内、自ホストのIPアドレスの表示
-func Greeting(port int) {
-    log.Printf("サーバーを起動中です... WebGUIは http://0.0.0.0:%d でアクセスできます", port)
+// Greeting: 起動時の挨拶とIPアドレスの表示
+func Greeting(address string, port int) {
+    log.Printf("サーバーを起動中です... WebGUIは http://%s:%d でアクセスできます", address, port)
     listLocalIPs()
 }
 
@@ -70,11 +67,20 @@ func listLocalIPs() {
 
 // WebGUI（静的ファイルサーバー）
 func webGUIServer(w http.ResponseWriter, r *http.Request) {
-    file := r.URL.Path[1:]
-    if file == "" {
-        file = "index.html"
+    file := r.URL.Path
+    if file == "/" {
+        file = "/index.html"
     }
-    content, err := staticFiles.ReadFile(file)
+
+    // MIMEタイプの設定
+    ext := filepath.Ext(file)
+    mimeType := mime.TypeByExtension(ext)
+    if mimeType != "" {
+        w.Header().Set("Content-Type", mimeType)
+    }
+
+    // webディレクトリを基準にファイルパスを構築
+    content, err := staticFiles.ReadFile(path.Join("web", file))
     if err != nil {
         http.NotFound(w, r)
         return
@@ -82,7 +88,7 @@ func webGUIServer(w http.ResponseWriter, r *http.Request) {
     w.Write(content)
 }
 
-// キー入力APIサーバー
+// キー入力API
 func pressKey(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Access-Control-Allow-Origin", "*")
     w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -112,6 +118,7 @@ func pressKey(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+// キー入力操作
 func sendKeyEvent(key string) error {
     kb, err := keybd_event.NewKeyBonding()
     if err != nil {
@@ -119,6 +126,12 @@ func sendKeyEvent(key string) error {
     }
 
     switch key {
+    case "a":
+        kb.SetKeys(keybd_event.VK_A)
+    case "b":
+        kb.SetKeys(keybd_event.VK_B)
+    case "space":
+        kb.SetKeys(keybd_event.VK_SPACE)
     case "left":
         kb.SetKeys(keybd_event.VK_LEFT)
     case "right":
@@ -141,37 +154,78 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
     w.Write([]byte("pong"))
 }
 
+// ターミナルからのコマンド入力を処理する関数
+func commandLoop(cancel context.CancelFunc) {
+    scanner := bufio.NewScanner(os.Stdin)
+    fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'exit'で終了）：")
+    for scanner.Scan() {
+        input := strings.TrimSpace(scanner.Text())
+        switch input {
+        case "show":
+            listLocalIPs()
+        case "exit":
+            fmt.Println("終了します。")
+            cancel() // サーバーのシャットダウンをトリガー
+            return
+        default:
+            fmt.Println("不明なコマンドです。'show' または 'exit' を入力してください。")
+        }
+        fmt.Println("コマンドを入力してください（'show'でインタフェースのアドレスを表示、'exit'で終了）：")
+    }
+    if err := scanner.Err(); err != nil {
+        log.Printf("コマンド入力中にエラーが発生しました: %v", err)
+    }
+}
+
 func main() {
-    var wg sync.WaitGroup
-    wg.Add(2)
+    // コマンドライン引数でアドレスとポートを指定
+    address := flag.String("addr", "localhost", "サーバーのアドレス")
+    port := flag.Int("port", 5555, "サーバーのポート番号")
+    flag.Parse()
 
-    // WebGUIとAPIサーバーのポートを自動調整
-    webGUIPort := findAvailablePort(5555)
-    apiPort := findAvailablePort(5556)
+    // シグナル処理のためのコンテキスト
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
 
-    // 起動時の挨拶とIPアドレスの表示
-    Greeting(webGUIPort)
+    // シグナルのリスニングをセットアップ
+    sigs := make(chan os.Signal, 1)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-    // WebGUIサーバー
+    // マルチプレクサの設定
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", webGUIServer)        // WebGUI（静的ファイルサーバー）
+    mux.HandleFunc("/api/press_key", pressKey) // キー入力API
+    mux.HandleFunc("/api/ping", pingHandler)    // Pingエンドポイント
+
+    // サーバー設定
+    server := &http.Server{
+        Addr:    fmt.Sprintf("%s:%d", *address, *port),
+        Handler: mux,
+    }
+
+    // サーバーを別ゴルーチンで起動
     go func() {
-        defer wg.Done()
-        http.HandleFunc("/", webGUIServer)
-        log.Printf("WebGUIをポート%dで起動しました", webGUIPort)
-        if err := http.ListenAndServe(fmt.Sprintf(":%d", webGUIPort), nil); err != nil {
-            log.Fatalf("WebGUIの起動に失敗しました: %v", err)
+        log.Printf("サーバーを %s で起動しました", server.Addr)
+        if err := server.ListenAndServe(); err != http.ErrServerClosed {
+            log.Fatalf("サーバーの起動に失敗しました: %v", err)
         }
     }()
 
-    // キー入力APIサーバー
-    go func() {
-        defer wg.Done()
-        http.HandleFunc("/press_key", pressKey)
-        http.HandleFunc("/ping", pingHandler)
-        log.Printf("キー入力APIサーバーをポート%dで起動しました", apiPort)
-        if err := http.ListenAndServe(fmt.Sprintf(":%d", apiPort), nil); err != nil {
-            log.Fatalf("キー入力APIサーバーの起動に失敗しました: %v", err)
-        }
-    }()
+    // コマンド入力の待機を別ゴルーチンで実行
+    go commandLoop(cancel)
 
-    wg.Wait()
+    // シグナルまたはキャンセルされるまで待機
+    select {
+    case <-sigs:
+        fmt.Println("\nシグナルを受信しました。終了します。")
+    case <-ctx.Done():
+    }
+
+    // サーバーのシャットダウン
+    shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer shutdownCancel()
+    if err := server.Shutdown(shutdownCtx); err != nil {
+        log.Fatalf("サーバーのシャットダウンに失敗しました: %v", err)
+    }
+    log.Println("サーバーが正常に停止しました。")
 }
