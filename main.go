@@ -262,10 +262,10 @@ func commandLoop(cancel context.CancelFunc, server **http.Server, address *strin
 			}
 
 		case "help":
-			fmt.Println("・ 'show': ホストに搭載されているI/Fのアドレスを列挙")
-			fmt.Println("・ 'switch <port>': 使用ポートの切り替え")
-			fmt.Println("・ 'log ping <on|off>': Pingログの表示を切り替え")
-			fmt.Println("・ 'exit': システムを終了")
+			fmt.Println("・ 'show'              : ホストに搭載されているI/Fのアドレスを列挙")
+			fmt.Println("・ 'switch <port>'     : 使用ポートの切り替え")
+			fmt.Println("・ 'log ping <on|off>' : Pingログの表示を切り替え")
+			fmt.Println("・ 'exit'              : システムを終了")
 		default:
 			fmt.Println("不明なコマンドです。(help: ヘルプ)")
 		}
