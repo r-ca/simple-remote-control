@@ -102,7 +102,7 @@ func pressKey(w http.ResponseWriter, r *http.Request) {
         }
         w.WriteHeader(http.StatusOK)
         w.Write([]byte("キーが入力されました: " + req.Key))
-        logInfo("キーが入力されました: " + req.Key + "(Source: " + r.RemoteAddr + ")")
+        logInfo("キーが入力されました: " + req.Key + " (Source: " + r.RemoteAddr + ")")
     } else {
         http.Error(w, "キーが指定されていません", http.StatusBadRequest)
     }
