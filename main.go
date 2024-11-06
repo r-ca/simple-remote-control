@@ -39,7 +39,7 @@ const (
 )
 
 // Ping log flag
-var pingLog = true
+var pingLog = false
 
 // 静的ファイルを埋め込み
 //
