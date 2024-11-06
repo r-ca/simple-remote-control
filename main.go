@@ -239,10 +239,21 @@ func commandLoop(ctx context.Context, cancel context.CancelFunc, server **http.S
     }
 }
 
+func greeting(address string, port int) {
+    fmt.Println("-----------------------------------------------------")
+    fmt.Println(" Simple Remote Control v" + VERSION)
+    fmt.Println("       シンプルなシングルバイナリ型PowerPointリモコン")
+    fmt.Println("-----------------------------------------------------")
+    fmt.Printf("- Listen address: http://%s:%d/\n", address, port)
+    fmt.Println("-----------------------------------------------------")
+}
+
 func main() {
     address := flag.String("addr", DEFAULT_ADDRESS, "サーバーのアドレス")
     port := flag.Int("port", DEFAULT_PORT, "サーバーのポート番号")
     flag.Parse()
+
+    greeting(*address, *port)
 
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
