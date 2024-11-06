@@ -90,6 +90,7 @@ func pressKey(w http.ResponseWriter, r *http.Request) {
     var req KeyRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, "リクエストが不正です", http.StatusBadRequest)
+        logWarn("リクエストが不正です: " + err.Error())
         return
     }
 
@@ -101,6 +102,7 @@ func pressKey(w http.ResponseWriter, r *http.Request) {
         }
         w.WriteHeader(http.StatusOK)
         w.Write([]byte("キーが入力されました: " + req.Key))
+        logInfo("キーが入力されました: " + req.Key + "(Source: " + r.RemoteAddr + ")")
     } else {
         http.Error(w, "キーが指定されていません", http.StatusBadRequest)
     }
@@ -140,6 +142,7 @@ func sendKeyEvent(key string) error {
 // Pingエンドポイントのハンドラー
 func pingHandler(w http.ResponseWriter, r *http.Request) {
     w.Write([]byte("pong"))
+    logInfo("Pingを受信しました (Source: " + r.RemoteAddr + ")")
 }
 
 // サーバーを開始する関数
