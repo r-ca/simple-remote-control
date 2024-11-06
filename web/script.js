@@ -89,7 +89,7 @@ function changeSlide(direction) {
 // TODO: 内部でグローバル変数を参照するのをやめたい
 function checkStatus() {
     addressList.forEach((address, index) => {
-        fetch(address)
+        fetch(`${address}/api/ping`)
             .then(response => {
                 if (response.ok) {
                     console.log(`[${index}] ${address} is OK`);
@@ -128,7 +128,7 @@ setInterval(checkStatus, 5000);
 // Supported keys: "left", "right"
 function sendKeyPress(key) {
     addressList.forEach((address, index) => {
-        fetch(`${address}/press_key`, {
+        fetch(`${address}/api/press_key`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ key })
